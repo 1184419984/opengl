@@ -23,51 +23,48 @@ static const int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
 
 
 static GLfloat vertices[] = {
-	0.5f, 0.5f, 0.0f,   // 右上角
-	0.5f, -0.5f, 0.0f,  // 右下角
-	-0.5f, -0.5f, 0.0f, // 左下角
-	-0.5f, 0.5f, 0.0f   // 左上角
+	0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
+	-0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
+	0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top 
 };
 
 static GLuint indices[] = { // 注意索引从0开始! 
-	0, 1, 3, // 第一个三角形
-	1, 2, 3  // 第二个三角形
+	0, 1, 2 // 第一个三角形
 };
 
 static GLuint createMyVertextVAO()
 {
-	GLuint resultOVA, OVB;
-	glGenVertexArrays(1, &resultOVA);
-	glGenBuffers(1, &OVB);
-	glBindVertexArray(resultOVA);
-	glBindBuffer(GL_ARRAY_BUFFER, OVB);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // 填充数据
-	//解释数据
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	unsigned int VBO, VAO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	return resultOVA;
+	// color attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	return VAO;
 }
 
 static GLuint createMyElementVAO()
 {
-	GLuint resultOVA, EBO, VBO;
+	GLuint resultOVA, VBO;
 	glGenVertexArrays(1, &resultOVA);
-	glGenBuffers(1, &EBO);
 	glGenBuffers(1, &VBO);
-
 	glBindVertexArray(resultOVA);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 	return resultOVA;
 }
 
@@ -147,7 +144,7 @@ int main(int argc, char** argv)
 	// 设置视口参数
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-	auto vertexVAO = createMyElementVAO();
+	auto vertexVAO = createMyVertextVAO();
 	auto shaderProgram = ShaderHandle("vertexShader.vs", "framentShader_time_color.fs");
 	//
 
@@ -161,19 +158,16 @@ int main(int argc, char** argv)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		GLdouble curTime = glfwGetTime();
-		GLdouble greenValue = (sin(curTime) / 2) + 0.5;
-		GLint vertexColorLocation = glGetUniformLocation(shaderProgram.getProgram(), "ourColor");
-		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
-		std::printf("%.1f", greenValue);
+		GLdouble greenValue = (sin(curTime) / 4) + 0.5;
+		GLint vertexColorLocation = glGetUniformLocation(shaderProgram.getProgram(), "ourColors");
+		glUniform4f(vertexColorLocation, greenValue, greenValue, greenValue, 1.0f);
+		//std::printf("%.1f", greenValue);
 		glBindVertexArray(vertexVAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glBindVertexArray(0);
 		shaderProgram.use();
 		glfwSwapBuffers(window); // 交换缓存
 	}
-	GLuint VBO;
-	glGenBuffers(1, &VBO);
-
 	glfwTerminate(); // 释放资源
 	return 0;
 }
